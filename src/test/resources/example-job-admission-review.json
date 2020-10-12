@@ -1,0 +1,190 @@
+{
+  "additionalProperties": {
+  },
+  "apiVersion": "admission.k8s.io/v1",
+  "kind": "AdmissionReview",
+  "request": {
+    "additionalProperties": {
+    },
+    "dryRun": false,
+    "kind": {
+      "additionalProperties": {
+      },
+      "group": "batch",
+      "kind": "Job",
+      "version": "v1"
+    },
+    "name": "dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj",
+    "namespace": "admin-ns",
+    "object": {
+      "additionalProperties": {
+      },
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "additionalProperties": {
+        },
+        "finalizers": [
+        ],
+        "labels": {
+          "access-ml-pipeline": "true"
+        },
+        "managedFields": [
+        ],
+        "name": "dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj",
+        "namespace": "admin-ns",
+        "ownerReferences": [
+          {
+            "additionalProperties": {
+            },
+            "apiVersion": "kubeflow.org/v1alpha3",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Trial",
+            "name": "dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj",
+            "uid": "1b5f7a8a-a84a-4969-b6f8-21b432ba1834"
+          }
+        ]
+      },
+      "spec": {
+        "additionalProperties": {
+        },
+        "backoffLimit": 0,
+        "completions": 1,
+        "parallelism": 1,
+        "template": {
+          "additionalProperties": {
+          },
+          "metadata": {
+            "additionalProperties": {
+            },
+            "annotations": {
+              "sidecar.istio.io/inject": "false"
+            },
+            "finalizers": [
+            ],
+            "labels": {
+              "access-ml-pipeline": "true"
+            },
+            "managedFields": [
+            ],
+            "ownerReferences": [
+            ]
+          },
+          "spec": {
+            "additionalProperties": {
+            },
+            "containers": [
+              {
+                "additionalProperties": {
+                },
+                "args": [
+                ],
+                "command": [
+                  "python3 -u -c \"from kale.common.kfputils                import create_and_wait_kfp_run;                create_and_wait_kfp_run(                    pipeline_id='79bd62a0-6452-456f-b6db-1fd20c040369',                    run_name='dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj',                    experiment_name='dog-breed-with-webhook-katib-v4-fbcuv', nodes_number='251',                )\""
+                ],
+                "env": [
+                ],
+                "envFrom": [
+                ],
+                "image": "gcr.io/arrikto/katib-kfp-trial:8f358ff",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj",
+                "ports": [
+                ],
+                "resources": {
+                  "additionalProperties": {
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeDevices": [
+                ],
+                "volumeMounts": [
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "ephemeralContainers": [
+            ],
+            "hostAliases": [
+            ],
+            "imagePullSecrets": [
+            ],
+            "initContainers": [
+            ],
+            "readinessGates": [
+            ],
+            "restartPolicy": "Never",
+            "schedulerName": "default-scheduler",
+            "securityContext": {
+              "additionalProperties": {
+              },
+              "supplementalGroups": [
+              ],
+              "sysctls": [
+              ]
+            },
+            "serviceAccount": "pipeline-runner",
+            "serviceAccountName": "pipeline-runner",
+            "terminationGracePeriodSeconds": 30,
+            "tolerations": [
+            ],
+            "topologySpreadConstraints": [
+            ],
+            "volumes": [
+            ]
+          }
+        }
+      },
+      "status": {
+        "additionalProperties": {
+        },
+        "conditions": [
+        ]
+      }
+    },
+    "operation": "CREATE",
+    "options": {
+      "additionalProperties": {
+      },
+      "apiVersion": "meta.k8s.io/v1",
+      "dryRun": [
+      ],
+      "kind": "CreateOptions"
+    },
+    "requestKind": {
+      "additionalProperties": {
+      },
+      "group": "batch",
+      "kind": "Job",
+      "version": "v1"
+    },
+    "requestResource": {
+      "additionalProperties": {
+      },
+      "group": "batch",
+      "resource": "jobs",
+      "version": "v1"
+    },
+    "resource": {
+      "additionalProperties": {
+      },
+      "group": "batch",
+      "resource": "jobs",
+      "version": "v1"
+    },
+    "uid": "6b649b17-9fdc-4e6c-89ff-0872a76a0fce",
+    "userInfo": {
+      "additionalProperties": {
+      },
+      "groups": [
+        "system:serviceaccounts",
+        "system:serviceaccounts:kubeflow",
+        "system:authenticated"
+      ],
+      "uid": "aa3a024d-4969-4bbc-9ba1-e92d408b7bbd",
+      "username": "system:serviceaccount:kubeflow:katib-controller"
+    }
+  }
+}

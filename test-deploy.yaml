@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: test-admission
+spec:
+  selector:
+    matchLabels:
+      name: httpbin
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: httpbin
+    spec:
+      containers:
+        - name: httpbin
+          image: scrapinghub/httpbin:latest
+          command:
+            - sleep
+            - "3600"
+          resources:
+            requests:
+              cpu: 0.1
+              memory: 200

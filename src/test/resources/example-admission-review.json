@@ -1,0 +1,119 @@
+{
+  "additionalProperties": {
+  },
+  "apiVersion": "admission.k8s.io/v1",
+  "kind": "AdmissionReview",
+  "request": {
+    "additionalProperties": {
+    },
+    "dryRun": false,
+    "kind": {
+      "additionalProperties": {
+      },
+      "group": "kubeflow.org",
+      "kind": "Trial",
+      "version": "v1alpha3"
+    },
+    "name": "dog-breed-with-webhook-katib-v4-q8dtb-lrvn7mxr",
+    "namespace": "admin-ns",
+    "object": {
+      "apiVersion": "kubeflow.org/v1alpha3",
+      "kind": "Trial",
+      "metadata": {
+        "additionalProperties": {
+        },
+        "finalizers": [
+        ],
+        "labels": {
+          "controller-tools.k8s.io": "1.0",
+          "experiment": "dog-breed-with-webhook-katib-v4-q8dtb"
+        },
+        "managedFields": [
+        ],
+        "name": "dog-breed-with-webhook-katib-v4-q8dtb-lrvn7mxr",
+        "namespace": "admin-ns",
+        "ownerReferences": [
+          {
+            "additionalProperties": {
+            },
+            "apiVersion": "kubeflow.org/v1alpha3",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Experiment",
+            "name": "dog-breed-with-webhook-katib-v4-q8dtb",
+            "uid": "44b11cb9-97c5-4f50-8727-ce4833d0c524"
+          }
+        ]
+      },
+      "spec": {
+        "additionalProperties": {
+          "runSpec": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: dog-breed-with-webhook-katib-v4-q8dtb-lrvn7mxr\n  namespace: admin-ns\nspec:\n  backoffLimit: 0\n  template:\n    metadata:\n      annotations:\n        sidecar.istio.io/inject: \"false\"\n      labels:\n        access-ml-pipeline: \"true\"\n    spec:\n      restartPolicy: Never\n      serviceAccountName: pipeline-runner\n      containers:\n        - name: dog-breed-with-webhook-katib-v4-q8dtb-lrvn7mxr\n          image: gcr.io/arrikto/katib-kfp-trial:8f358ff\n          command:\n            - python3 -u -c \"from kale.common.kfputils                import create_and_wait_kfp_run;                create_and_wait_kfp_run(                    pipeline_id='e1a8983d-8cef-4aab-8773-128bbab87bf2',                    run_name='dog-breed-with-webhook-katib-v4-q8dtb-lrvn7mxr',                    experiment_name='dog-breed-with-webhook-katib-v4-q8dtb',\n                        nodes_number='251',                )\"\n",
+          "parameterAssignments": [
+            {
+              "name": "nodes_number",
+              "value": "251"
+            }
+          ],
+          "metricsCollector": {
+            "collector": {
+              "kind": "StdOut"
+            }
+          },
+          "objective": {
+            "goal": 90,
+            "objectiveMetricName": "test-accuracy-resnet",
+            "type": "maximize"
+          }
+        }
+      },
+      "status": {
+        "additionalProperties": {
+        },
+        "apiVersion": "v1",
+        "kind": "Status"
+      }
+    },
+    "operation": "CREATE",
+    "options": {
+      "additionalProperties": {
+      },
+      "apiVersion": "meta.k8s.io/v1",
+      "dryRun": [
+      ],
+      "kind": "CreateOptions"
+    },
+    "requestKind": {
+      "additionalProperties": {
+      },
+      "group": "kubeflow.org",
+      "kind": "Trial",
+      "version": "v1alpha3"
+    },
+    "requestResource": {
+      "additionalProperties": {
+      },
+      "group": "kubeflow.org",
+      "resource": "trials",
+      "version": "v1alpha3"
+    },
+    "resource": {
+      "additionalProperties": {
+      },
+      "group": "kubeflow.org",
+      "resource": "trials",
+      "version": "v1alpha3"
+    },
+    "uid": "96f18e61-12ca-4a49-b59f-3950018d236f",
+    "userInfo": {
+      "additionalProperties": {
+      },
+      "groups": [
+        "system:serviceaccounts",
+        "system:serviceaccounts:kubeflow",
+        "system:authenticated"
+      ],
+      "uid": "aa3a024d-4969-4bbc-9ba1-e92d408b7bbd",
+      "username": "system:serviceaccount:kubeflow:katib-controller"
+    }
+  }
+}

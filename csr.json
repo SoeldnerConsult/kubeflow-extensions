@@ -1,0 +1,10 @@
+{
+  "hosts": [
+    "trials-mutator.kubeflow-extension.svc"
+  ],
+  "CN": "trials-mutator.kubeflow-extension.svc",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  }
+}
