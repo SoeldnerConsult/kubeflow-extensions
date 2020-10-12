@@ -1,7 +1,7 @@
 apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
+kind: MutatingWebhookConfiguration
 metadata:
-  name: validating.trials-mutator.keeyzar.de
+  name: trials.mutator.keeyzar.de
 webhooks:
   - admissionReviewVersions:
       - v1
@@ -10,11 +10,11 @@ webhooks:
       service:
         name: trials-mutator
         namespace: kubeflow-extension
-        path: /trial/validate
+        path: /trial/mutate
         port: 443
     failurePolicy: Ignore
     matchPolicy: Equivalent
-    name: validating.trials-mutator.keeyzar.de
+    name: trials.mutator.keeyzar.de
     objectSelector: {}
     rules:
       - apiGroups:
@@ -33,20 +33,20 @@ webhooks:
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: mutating.trials-mutator.keeyzar.de
+  name: job.mutator.keeyzar.de
 webhooks:
   - admissionReviewVersions:
       - v1
     clientConfig:
       caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5ekNDQWJPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJd01Ea3lPREV3TWpVd01Wb1hEVE13TURreU5qRXdNekF3TVZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmdrCk9ycXpIK3hXeVVrNTVLV2VYb3Z5aUIwQ3krRnl3Wld0eVg0NjZlUExTY0cwNEZMZmpIN0dmMGdsTWlwTC90eSsKVEQ4eU95WVF2RHhIYVVta2lzRkFlRjlhWjNweUd6N3VMVEVmWWd1N1NRZDNyTlREdGdCdE4zTG05Ritaa3ppRQpsTTU5UElUQ2ZyemE0TEp4bmdhaSttTkU2dlBRZERsV29xY1hOVGFQOUVwaHNSdE1ST1czUUx0ODNYSGw1aStxCmMvcFlDSmx5UjdiTmlYOTRCTHV1dUJUMzBjZ0RFNEtybWZFdk1JR2NVRTEzdCtxcXdqamxRZWcxd2JzNjRZN3oKeEV2aW5vTThCMWhNWHpuM1ErMW9ISVdKN0VTdXduWEE1SkcxUlZRVCs4N2t0a1czcGVUMzlvOU1VS0xHOU1iTQpIUXorQnVoeERHZHE1aVBCWk5zQ0F3RUFBYU1tTUNRd0RnWURWUjBQQVFIL0JBUURBZ0trTUJJR0ExVWRFd0VCCi93UUlNQVlCQWY4Q0FRQXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBTHkzOHVZTGI0UVlpWng0eHVGcVd5UlEKVVovT3ZBekN5SXE0K0dDa29RdXZPS2tFZHFteUEzZU9PK3pzV29GckJyUUNObXJZSDFieGl3QjdxNVZqUGNoVQprZlFxUy9sb2ZrRGVXVlZvRU1YTGd4NVpmT0ZKdnpHeXA1UjhTTHl2ZXRRWERheFN5cURZbTk1QTFvS2hJVTM2CjIvL3U3QzZCMnlMcFZXa3VlcFEwaG9qajROZlZOTDVhdHRKN1BTODlEUjJnbzdiWDBQTVl1YTFEVGZzRnQzekMKWkYxS3JidDI1WWdmZnl4YzkvQVkrM01UUFFaTFVFUlF2WXVEUXM1ZHBRZCtyQktZSC9POEkvQSt0RmprZTk3WQpLdjg4YXNZQVM0NW5jQmtTcWMxM2xKUkRUVlVjYTNjK0tXYlV4dnM1N2txcm5vWElJdXI3QThQdnduenZsOHM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
       service:
-        name: trials-mutator
+        name: job-mutator
         namespace: kubeflow-extension
         path: /job/mutate
         port: 443
     failurePolicy: Ignore
     matchPolicy: Equivalent
-    name: mutating-pod.trials-mutator.keeyzar.de
+    name: job.mutator.keeyzar.de
     rules:
       - apiGroups:
           - batch
@@ -63,20 +63,20 @@ webhooks:
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: mutating-pod.trials-mutator.keeyzar.de
+  name: pod.mutator.keeyzar.de
 webhooks:
   - admissionReviewVersions:
       - v1
     clientConfig:
       caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN5ekNDQWJPZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJd01Ea3lPREV3TWpVd01Wb1hEVE13TURreU5qRXdNekF3TVZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTmdrCk9ycXpIK3hXeVVrNTVLV2VYb3Z5aUIwQ3krRnl3Wld0eVg0NjZlUExTY0cwNEZMZmpIN0dmMGdsTWlwTC90eSsKVEQ4eU95WVF2RHhIYVVta2lzRkFlRjlhWjNweUd6N3VMVEVmWWd1N1NRZDNyTlREdGdCdE4zTG05Ritaa3ppRQpsTTU5UElUQ2ZyemE0TEp4bmdhaSttTkU2dlBRZERsV29xY1hOVGFQOUVwaHNSdE1ST1czUUx0ODNYSGw1aStxCmMvcFlDSmx5UjdiTmlYOTRCTHV1dUJUMzBjZ0RFNEtybWZFdk1JR2NVRTEzdCtxcXdqamxRZWcxd2JzNjRZN3oKeEV2aW5vTThCMWhNWHpuM1ErMW9ISVdKN0VTdXduWEE1SkcxUlZRVCs4N2t0a1czcGVUMzlvOU1VS0xHOU1iTQpIUXorQnVoeERHZHE1aVBCWk5zQ0F3RUFBYU1tTUNRd0RnWURWUjBQQVFIL0JBUURBZ0trTUJJR0ExVWRFd0VCCi93UUlNQVlCQWY4Q0FRQXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBTHkzOHVZTGI0UVlpWng0eHVGcVd5UlEKVVovT3ZBekN5SXE0K0dDa29RdXZPS2tFZHFteUEzZU9PK3pzV29GckJyUUNObXJZSDFieGl3QjdxNVZqUGNoVQprZlFxUy9sb2ZrRGVXVlZvRU1YTGd4NVpmT0ZKdnpHeXA1UjhTTHl2ZXRRWERheFN5cURZbTk1QTFvS2hJVTM2CjIvL3U3QzZCMnlMcFZXa3VlcFEwaG9qajROZlZOTDVhdHRKN1BTODlEUjJnbzdiWDBQTVl1YTFEVGZzRnQzekMKWkYxS3JidDI1WWdmZnl4YzkvQVkrM01UUFFaTFVFUlF2WXVEUXM1ZHBRZCtyQktZSC9POEkvQSt0RmprZTk3WQpLdjg4YXNZQVM0NW5jQmtTcWMxM2xKUkRUVlVjYTNjK0tXYlV4dnM1N2txcm5vWElJdXI3QThQdnduenZsOHM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
       service:
-        name: trials-mutator
+        name: pod-mutator
         namespace: kubeflow-extension
         path: /pod/mutate
         port: 443
     failurePolicy: Ignore
     matchPolicy: Equivalent
-    name: mutating-pod.trials-mutator.keeyzar.de
+    name: pod.mutator.keeyzar.de
     rules:
       - apiGroups:
           - core
