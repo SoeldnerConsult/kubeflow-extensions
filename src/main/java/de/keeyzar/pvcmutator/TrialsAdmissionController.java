@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
-import javax.json.Json;
-import javax.json.JsonObject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbConfig;
@@ -23,21 +21,19 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
-import java.io.StringReader;
-import java.util.Base64;
-
 import static javax.json.bind.JsonbConfig.FORMATTING;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("/trial/mutate")
+@Path("/trial/validate")
 @Produces(APPLICATION_JSON)
 @Consumes(APPLICATION_JSON)
 public class TrialsAdmissionController {
+    private SharedLists sharedLists;
     private static final Logger log = LoggerFactory.getLogger(TrialsAdmissionController.class);
 
     @Inject
-    public TrialsAdmissionController(){
-
+    public TrialsAdmissionController(SharedLists sharedLists){
+        this.sharedLists = sharedLists;
     }
 
     public void preRegister(@Observes StartupEvent startupEvent){
@@ -49,7 +45,7 @@ public class TrialsAdmissionController {
     @POST
     public AdmissionReview validate(AdmissionReview review) {
         Jsonb jsonb = JsonbBuilder.create(new JsonbConfig().setProperty(FORMATTING, true));
-        //todo print some fkn stuff, when on debug
+//        log.info("received admission review: {}", jsonb.toJson(review));
 
         AdmissionRequest request = review.getRequest();
 
@@ -61,21 +57,8 @@ public class TrialsAdmissionController {
 
         if (request.getOperation().equals("CREATE") && object instanceof Trial) {
             Trial trial = (Trial) object;
-            if (shouldWeModifyCorrespondingJobs(trial)) {
-
-                JsonObject original = toJsonObject(trial);
-                mutateTrial(trial);
-                JsonObject mutated = toJsonObject(trial);
-
-                String patch = Json.createDiff(original, mutated).toString();
-                String encoded = Base64.getEncoder().encodeToString(patch.getBytes());
-
-                log.info("encoded patch is: {}", encoded);
-                log.info("patching with {}", patch);
-
-                responseBuilder
-                        .withPatchType("JSONPatch")
-                        .withPatch(encoded);
+            if (shouldModifyCorrespondingJobs(trial)) {
+                saveTrialName(trial);
             }
 
         }
@@ -87,20 +70,28 @@ public class TrialsAdmissionController {
         return admissionReview;
     }
 
-    private void mutateTrial(Trial trial) {
-        trial.getMetadata().getLabels().put("kubeflow-extension", "true");
+    private void saveTrialName(Trial trial) {
+        sharedLists.getTrialList().add(trial.getMetadata().getName());
+        log.info("We save the trial: {}", trial.getMetadata().getName());
     }
 
-
-    JsonObject toJsonObject(Trial trial) {
-        return Json.createReader(new StringReader(JsonbBuilder.create().toJson(trial))).readObject();
-    }
-
-
-    boolean shouldWeModifyCorrespondingJobs(Trial trial) {
-        //each trial not in kubeflow will have connection problems...
+    boolean shouldModifyCorrespondingJobs(Trial trial) {
         boolean shouldModifyCorrespondingJobs = !"kubeflow".equals(trial.getMetadata().getNamespace());
         log.info("Should we modify corresponding jobs? {}", shouldModifyCorrespondingJobs);
+
         return shouldModifyCorrespondingJobs;
     }
+
+//    void mutate(Trial trial) {
+//         String string = (String) trial.getSpec()
+//                .getAdditionalProperties()
+//                .get("runSpec");
+//        ObjectMapper objectMapper = new ObjectMapper();
+//
+//        string = string.replace("sidecar.istio.io/inject: \"false\"", "sidecar.istio.io/inject: \"true\"");
+//        string = string.replace("serviceAccountName: pipeline-runner", "serviceAccountName: default-editor");
+//        trial.getSpec().getAdditionalProperties().put("runSpec", string);
+//        //todo fix namespace envoyfilter
+//        String namespace= trial.getMetadata().getNamespace();
+//    }
 }

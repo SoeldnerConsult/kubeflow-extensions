@@ -60,9 +60,11 @@ public class JobAdmissionController {
         if (request.getOperation().equals("CREATE") && object instanceof Job) {
             Job job = (Job) object;
             if (doesJobNeedModification(job)) {
+//                sharedLists.getJobList().add(job.getSpec().getTemplate().getMetadata().getLabels().get("job-name"));
                 JsonObject original = toJsonObject(job);
                 mutateJob(job);
                 JsonObject mutated = toJsonObject(job);
+                cleanupExperimentList(job);
 
                 String patch = Json.createDiff(original, mutated).toString();
                 String encoded = Base64.getEncoder().encodeToString(patch.getBytes());
@@ -92,21 +94,21 @@ public class JobAdmissionController {
         return admissionReview;
     }
 
+    private void cleanupExperimentList(Job job) {
+        sharedLists.getTrialList().remove(job.getMetadata().getName());
+    }
+
     JsonObject toJsonObject(Job trial) {
+
         return Json.createReader(new StringReader(JsonbBuilder.create().toJson(trial))).readObject();
     }
 
     boolean doesJobNeedModification(Job job) {
-        String expectedValue = "true";
-        String defaultValue = "false";
-        String key = "kubeflow-extension";
-
-        String kubeflowExtensionValue = job.getMetadata().
-                getLabels().getOrDefault(key, defaultValue);
-
-        log.info("Does the Job contains the Label: {}? {}", key, job.getMetadata().getLabels().containsKey(key));
-
-        return expectedValue.equals(kubeflowExtensionValue);
+        return true;
+//        log.info("Checking whether or not a modification of the job is necessary");
+//        log.info("{} is the name of the job", job.getMetadata().getName());
+//        sharedLists.getTrialList().forEach((e) -> log.info("jobs to be mutated: {}", e ));
+//        return sharedLists.getTrialList().contains(job.getMetadata().getName());
     }
 
     void mutateJob(Job job) {
@@ -120,7 +122,7 @@ public class JobAdmissionController {
         template.getMetadata().getAnnotations().put("sidecar.istio.io~1inject", "true");
         template.getSpec().setServiceAccountName("default-editor");
         List<String> command = template.getSpec().getContainers().get(0).getCommand();
-        String newCommand = "sleep 3 && " + String.join(" ", command);
+        String newCommand = "sleep && " + String.join(" ", command);
         template.getSpec().getContainers().get(0).setCommand(List.of(newCommand));
 
         //this is a huge annoying error.. slash as a key will
