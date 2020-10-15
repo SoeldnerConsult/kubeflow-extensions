@@ -26,6 +26,8 @@ public class AdmissionReviewMutatorHelper {
 
     private final JsonPatchCreator jsonPatchCreator;
 
+    private boolean debugAdmissionReview = true;
+
     @Inject
     public AdmissionReviewMutatorHelper(JsonPatchCreator jsonPatchCreator) {
         this.jsonPatchCreator = jsonPatchCreator;
@@ -36,9 +38,9 @@ public class AdmissionReviewMutatorHelper {
         String CREATE = "CREATE";
 
         AdmissionRequest request = review.getRequest();
-        if(request.getOperation().equals(CREATE)){
+        if(CREATE.equals(request.getOperation()) && debugAdmissionReview){
             Jsonb jsonb = JsonbBuilder.create(new JsonbConfig().setProperty(FORMATTING, true));
-//            log.info("received create admission review: {}", jsonb.toJson(review));
+            log.info("received create admission review for class {}: \n{}\n", clz, jsonb.toJson(review));
             //todo make some great logging
         }
 
@@ -48,7 +50,7 @@ public class AdmissionReviewMutatorHelper {
 
         KubernetesResource requestObject = request.getObject();
 
-        if (request.getOperation().equals(CREATE) && requestObject.getClass().isAssignableFrom(clz)) {
+        if (CREATE.equals(request.getOperation()) && requestObject.getClass().isAssignableFrom(clz)) {
             T parsedObject = (T) requestObject;
 
             for (ReviewHook<T> revHooks : reviewHooks) {
@@ -84,6 +86,7 @@ public class AdmissionReviewMutatorHelper {
         return createAdmissionReview(review, clz, reviewHooks);
     }
 
+
     /**
      * This class is intended for registering multiple pod listeners for different types of Pods on a single
      * endpoint, so we do not waste any time
@@ -115,5 +118,10 @@ public class AdmissionReviewMutatorHelper {
         }
     }
 
-
+    /**
+     * disable/enable debugging of ReviewItems
+     */
+    public void enableDebuggingOfReviewitem(boolean enableDebugging){
+        this.debugAdmissionReview = enableDebugging;
+    }
 }

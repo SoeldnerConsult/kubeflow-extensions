@@ -1,8 +1,8 @@
 {
   "hosts": [
-    "trials-mutator.kubeflow-extension.svc"
+    "tenancy-fixer.kubeflow-extension.svc"
   ],
-  "CN": "trials-mutator.kubeflow-extension.svc",
+  "CN": "tenancy-fixer.kubeflow-extension.svc",
   "key": {
     "algo": "rsa",
     "size": 2048

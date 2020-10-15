@@ -22,17 +22,24 @@ public class KatibPodModifier {
      * therefore the created json patch will have errors!
      */
     void removeCommandEmptyListIfPresent(Pod pod) {
-        Container katibContainer = findMainContainer(pod);
+        log.info("pre modification hook for katib container will be applied");
+        Container katibContainer = findContainerByName(pod, KFEConstants.KATIB_CONTAINER_NAME);
         if(katibContainer.getCommand().isEmpty()) {
+            log.info("container commands where empty, therefore set the container null!");
             katibContainer.setCommand(null);
         }
     }
 
     boolean isModificationNecessary(Pod pod) {
-        log.debug("pod.meta.labels = {}", pod.getMetadata().getLabels());
-        log.debug("pod.label contains?? {}", pod.getMetadata().getLabels().containsKey(KF_EXTENSION_LABEL));
-        pod.getMetadata().getLabels().forEach((k, v) -> log.trace("key: {} value{}", k, v));
-        return pod.getMetadata().getLabels().containsKey(KF_EXTENSION_LABEL);
+        boolean containsLabel = pod.getMetadata().getLabels().containsKey(KF_EXTENSION_LABEL);
+        log.info("is this pod a katib pod? = {}", containsLabel);
+
+        if(!containsLabel){
+            log.info("label: {} not found. All available labels:", KF_EXTENSION_LABEL);
+            pod.getMetadata().getLabels().forEach((k, v) -> log.info("key: {} value: {}", k, v));
+        }
+
+        return containsLabel;
     }
 
     void mutatePod(Pod pod) {
@@ -40,16 +47,10 @@ public class KatibPodModifier {
         Container katibContainer = findContainerByName(pod, KFEConstants.KATIB_CONTAINER_NAME);
         Container mainContainer = findMainContainer(pod);
 
-        setIstioLabelToTrue(pod);
         fixMainContainerArgsAndCommands(mainContainer);
         fixKatibContainerArgsAndCommand(katibContainer);
 
         log.info("pod mutation finished");
-    }
-
-    private void setIstioLabelToTrue(Pod pod) {
-        //when patching this path we need to jsonPatch escape the slash in istio.io/inject with ~1
-        pod.getMetadata().getAnnotations().put("sidecar.istio.io~1inject", "true");
     }
 
     private void fixMainContainerArgsAndCommands(Container mainContainer) {
@@ -58,7 +59,12 @@ public class KatibPodModifier {
 
     private void addSleepBeforeFirstArg(Container mainContainer) {
         List<String> args = mainContainer.getArgs();
-        args.add(0, "sleep 3 &&");
+        //1 second sleep is not enough
+        //we get a connection refused error on each pod
+        // ; 3 did not fail that often, but when we
+        //to have a time dependency better be sure than sorry..
+        //yeah.. there are better ways.. but at what cost?
+        args.add(0, "sleep 5 &&");
         String newLongArg = String.join(" ", args);
         mainContainer.setArgs(List.of(newLongArg));
     }
@@ -105,10 +111,8 @@ public class KatibPodModifier {
         //or the job will finish with a failed state
         args.add(";" +
                 "exit_code=$?;" + //safe exit code
-                "sleep 5;" + //safety sleep (is this necessary) TODO check
                 "cat /dev/termination-log > /dev/termination-log.bak;" + //cp + mv not working.. someone is watching this file
                 "pkill -INT /usr/local/bin/pilot-agent;" + //kill istio sidecar
-                "sleep 5;" + //safety sleep (is this necessary?) TODO check
                 "cat /dev/termination-log.bak > /dev/termination-log;" + //restore original termination log
                 "exit $exit_code;"); //exit with exit code of file-metricscollector
 
@@ -131,7 +135,7 @@ public class KatibPodModifier {
     private Container findMainContainer(Pod pod) {
         String jobName = pod.getMetadata().getLabels().get(KFEConstants.JOB_NAME_LABEL);
         if(jobName == null){
-            //TODO
+            //TODO better ErrorHandling
             throw new RuntimeException("better errorhandling necessary");
         }
         return findContainerByName(pod, jobName);
@@ -159,7 +163,7 @@ public class KatibPodModifier {
         if(error){
             log.error("All possible containers:");
             containers.forEach((e) -> log.error("Containername: {}", e.getName()));
-            //todo better errorhandling
+            //todo better ErrorHandling
         }
 
         //this call will fail, if no container is found, therefore find a good

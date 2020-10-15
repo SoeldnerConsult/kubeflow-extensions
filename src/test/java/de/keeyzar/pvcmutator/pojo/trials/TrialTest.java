@@ -1,4 +1,4 @@
-package de.keeyzar.pvcmutator.pojo.Trials;
+package de.keeyzar.pvcmutator.pojo.trials;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;

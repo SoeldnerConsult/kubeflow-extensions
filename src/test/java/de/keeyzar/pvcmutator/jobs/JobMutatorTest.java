@@ -1,46 +1,57 @@
 package de.keeyzar.pvcmutator.jobs;
 
 import de.keeyzar.pvcmutator.utils.KFEConstants;
+import de.keeyzar.pvcmutator.utils.SharedTrialNameList;
+import io.fabric8.kubernetes.api.model.PodTemplateSpec;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import io.fabric8.kubernetes.api.model.batch.JobBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class JobMutatorTest {
+    @Mock
+    SharedTrialNameList sharedTrialNameList;
+    @Mock
+    Set<String> trialNamesSet;
+
+
     @Test
-    public void jobNeedModificationWithKubeflowExtensionLabel(){
-        JobMutator jobMutator = new JobMutator();
+    public void whenJobNameFoundInSharedListMutationIsNecessary(){
+        JobMutator jobMutator = new JobMutator(sharedTrialNameList);
         Job job = new JobBuilder().withNewMetadata()
-                .withLabels(Map.of(KFEConstants.KF_EXTENSION_LABEL, "true"))
+                .withName("testName")
                 .endMetadata()
                 .build();
+
+        sharedTrialNameList.setTrialNames(trialNamesSet);
+        when(sharedTrialNameList.getTrialNames()).thenReturn(trialNamesSet);
+        when(trialNamesSet.remove("testName")).thenReturn(true);
+
 
         boolean actualValue = jobMutator.doesJobNeedModification(job);
         assertTrue(actualValue, "Job should need a modification!");
     }
 
     @Test
-    public void kubeflowExtensionLabelValueIsImportant(){
-        JobMutator jobMutator = new JobMutator();
+    public void whenJobNameIsNotFoundInSharedListMutationIsNotNecessary(){
+        JobMutator jobMutator = new JobMutator(sharedTrialNameList);
         Job job = new JobBuilder().withNewMetadata()
-                .withLabels(Map.of(KFEConstants.KF_EXTENSION_LABEL, "false"))
                 .endMetadata()
                 .build();
 
-        boolean actualValue = jobMutator.doesJobNeedModification(job);
-        assertFalse(actualValue, "Job should need a modification!");
-    }
-
-    @Test
-    public void kubeflowExtensionLabelValueIsImportant_2(){
-        JobMutator jobMutator = new JobMutator();
-        Job job = new JobBuilder().withNewMetadata()
-                .withLabels(Map.of(KFEConstants.KF_EXTENSION_LABEL, ""))
-                .endMetadata()
-                .build();
+        sharedTrialNameList.setTrialNames(trialNamesSet);
+        when(sharedTrialNameList.getTrialNames()).thenReturn(trialNamesSet);
+        when(trialNamesSet.remove(any())).thenReturn(false);
 
         boolean actualValue = jobMutator.doesJobNeedModification(job);
         assertFalse(actualValue, "Job should need a modification!");
@@ -48,19 +59,25 @@ class JobMutatorTest {
 
     @Test
     void templateJobGetsMutatedCorrectly() {
-        JobMutator jobMutator = new JobMutator();
+        JobMutator jobMutator = new JobMutator(sharedTrialNameList);
         Job job = new JobBuilder()
                 .withNewSpec()
                 .withNewTemplate()
                 .withNewMetadata()
                 .withLabels(Map.of())
+                .withAnnotations(Map.of())
                 .endMetadata()
+                .withNewSpec()
+                .endSpec()
                 .endTemplate()
                 .endSpec().build();
 
         jobMutator.mutateJob(job);
 
-        assertEquals("true", job.getSpec().getTemplate().getMetadata().getLabels().get(KFEConstants.KF_EXTENSION_LABEL));
+        PodTemplateSpec modifiedTemplate = job.getSpec().getTemplate();
+        assertEquals("true", modifiedTemplate.getMetadata().getLabels().get(KFEConstants.KF_EXTENSION_LABEL));
+        assertEquals("true", modifiedTemplate.getMetadata().getAnnotations().get("sidecar.istio.io~1inject"));
+        assertEquals("default-editor", modifiedTemplate.getSpec().getServiceAccountName());
     }
 
 }

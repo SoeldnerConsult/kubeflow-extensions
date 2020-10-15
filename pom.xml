@@ -3,7 +3,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>de.keeyzar</groupId>
-  <artifactId>trials-mutator</artifactId>
+  <artifactId>tenancy-fixer</artifactId>
   <version>1.0</version>
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
@@ -42,6 +42,11 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-test-kubernetes-client</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

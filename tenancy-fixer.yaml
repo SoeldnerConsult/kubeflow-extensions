@@ -2,9 +2,9 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: extension-mutator
+  name: tenancy-fixer
   labels:
-    app: trials-mutator
+    app: tenancy-fixer
 spec:
   ports:
     - name: https
@@ -12,25 +12,25 @@ spec:
       port: 443
       targetPort: 8080
   selector:
-    app: trials-mutator
+    app: tenancy-fixer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: trials-mutator
+  name: tenancy-fixer
   namespace: kubeflow-extension
   labels:
-    app: trials-mutator
+    app: tenancy-fixer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: trials-mutator
+      app: tenancy-fixer
   template:
     metadata:
       labels:
-        app: trials-mutator
-      name: trials-mutator
+        app: tenancy-fixer
+      name: tenancy-fixer
       namespace: kubeflow-extension
     spec:
       initContainers:
@@ -57,8 +57,8 @@ spec:
             - name: keystore-volume
               mountPath: /var/run/secrets/java.io/keystores
       containers:
-        - name: trials-mutator
-          image: keeyzar/trials-mutator-jvm
+        - name: tenancy-fixer
+          image: keeyzar/tenancy-fixer-jvm
           env:
             - name: JAVA_OPTIONS
               value: -Dquarkus.http.host=0.0.0.0
@@ -75,6 +75,6 @@ spec:
       volumes:
         - name: certs-volume
           secret:
-            secretName: trials-mutator-tls
+            secretName: tenancy-fixer-tls
         - name: keystore-volume
           emptyDir: {}

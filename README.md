@@ -49,15 +49,15 @@ Is the trial not created in the kubeflow namespace, we add a kubeflow-extension=
 in following steps (of corresponding jobs and pods).
 
 ### 4) job admission controller, why?
-the job gets modified solely for the purpose of tagging the pod with
-kubeflow-extension, creating an identification layer for further modification
-TODO check if this is correct (i.e. if it's possible to do all modifications within the pod)
+- tag the pod with kubeflow-extension label (for identification and access through envoy filter) 
+- additionally we change the service account to default-editor (because the default editor
+most definitely has started this job, and the pipeline-runner SA does not have enough
+rights for access through RBAC of Envoy / istio)
+- finally we set the istio sidecar injection label.
+doing this in the pod is too late - the pod has already run through the istio webhook
 
 ### 5) pod admission controller, why?
-there's a multitude of problems
-- the pod needs another service account, as the given one does not have enough rights
-- the pod need the ist.io inject sidecar label set to true
-- multiple containers in the pod need small behaviour changes
+multiple containers in the pod need small behaviour changes
 
 three containers exist in the created pod.
 1) experiment executor container
@@ -102,17 +102,17 @@ kubectl config set-context $(kubectl config current-context) --namespace=kubeflo
 
 #push docker image
 mvn package -DskipTests
-docker build -f src/main/docker/Dockerfile.jvm -t keeyzar/trials-mutator-jvm .
-docker push keeyzar/trials-mutator-jvm
+docker build -f src/main/docker/Dockerfile.jvm -t keeyzar/tenancy-fixer-jvm .
+docker push keeyzar/tenancy-fixer-jvm
 
 #create certifcate request and sign..
 #make sure, go; cfssl cfssljson are installed
 chmod +x create-cert.sh
 ./create-cert.sh
 
-#deploy trials-mutator
-kubectl apply -f trials-mutator.yaml
-mutator=$(kubectl get pods --selector=app=trials-mutator -ojsonpath='{.items[*].metadata.name}')
+#deploy tenancy-fixer
+kubectl apply -f tenancy-fixer.yaml
+mutator=$(kubectl get pods --selector=app=tenancy-fixer -ojsonpath='{.items[*].metadata.name}')
 kubectl wait --for=condition=Ready --timeout=300s pod/$mutator
 
 #create test namespace plus deployment, for testing access against own service via ssl
@@ -128,19 +128,19 @@ kubectl exec $httpbin -n test-admission -- curl \
     --request POST \
     -H "Content-Type: application/json" \
     --data '{"additionalProperties":{},"apiVersion":"admission.k8s.io/v1beta1","kind":"AdmissionReview","request":{"additionalProperties":{},"kind":{"additionalProperties":{},"group":"extensions","kind":"Deployment","version":"v1beta1"},"name":"httpbin","namespace":"test-admission","operation":"UPDATE","resource":{"additionalProperties":{},"group":"extensions","resource":"deployments","version":"v1beta1"},"uid":"75a55056-bc03-11e9-82d4-025000000001","userInfo":{"additionalProperties":{},"groups":["system:masters","system:authenticated"],"username":"docker-for-desktop"}}}' \
-    https://trials-mutator.kubeflow-extension.svc/validate
+    https://tenancy-fixer.kubeflow-extension.svc/pod/mutate
 
 #obtain certificate from pod: 
-controller=$(kubectl get pods --selector=app=trials-mutator -o jsonpath='{.items[*].metadata.name}')
+controller=$(kubectl get pods --selector=app=tenancy-fixer -o jsonpath='{.items[*].metadata.name}')
 cert=$(kubectl exec $controller -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt | base64 | tr -d '\n')
-sed -i.bak -E "s/caBundle:.*?/caBundle: $cert/" validation-webhook.yaml
-kubectl apply -f validation-webhook.yaml
+sed -i.bak -E "s/caBundle:.*?/caBundle: $cert/" webhooks.yaml
+kubectl apply -f webhooks.yaml
 
 
 #done :)
 ```
 
-# trials-mutator project
+# tenancy-fixer project
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
@@ -156,10 +156,10 @@ You can run your application in dev mode that enables live coding using:
 ## Packaging and running the application
 
 The application can be packaged using `./mvnw package`.
-It produces the `trials-mutator-1.0-runner.jar` file in the `/target` directory.
+It produces the `tenancy-fixer-1.0-runner.jar` file in the `/target` directory.
 Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/lib` directory.
 
-The application is now runnable using `java -jar target/trials-mutator-1.0-runner.jar`.
+The application is now runnable using `java -jar target/tenancy-fixer-1.0-runner.jar`.
 
 ## Creating a native executable
 
@@ -167,6 +167,6 @@ You can create a native executable using: `./mvnw package -Pnative`.
 
 Or, if you don't have GraalVM installed, you can run the native executable build in a container using: `./mvnw package -Pnative -Dquarkus.native.container-build=true`.
 
-You can then execute your native executable with: `./target/trials-mutator-1.0-runner`
+You can then execute your native executable with: `./target/tenancy-fixer-1.0-runner`
 
 If you want to learn more about building native executables, please consult https://quarkus.io/guides/building-native-image.

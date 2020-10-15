@@ -1,4 +1,4 @@
-package de.keeyzar.pvcmutator.pojo.Trials;
+package de.keeyzar.pvcmutator.pojo.trials;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

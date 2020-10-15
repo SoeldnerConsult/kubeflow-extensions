@@ -31,21 +31,22 @@ class KatibPodModifierTest {
 
     @Test
     public void testThatCommandsAreOnlyDeletedWhenEmpty(){
-        setupMainContainer();
-        when(mainContainer.getCommand().isEmpty()).thenReturn(true);
+        setupKatibContainer();
+        when(katibContainer.getCommand().isEmpty()).thenReturn(true);
 
         katibPodModifier.removeCommandEmptyListIfPresent(pod);
-        verify(mainContainer, times(1)).setCommand(null);
+        verify(katibContainer, times(1)).setCommand(null);
     }
 
     @Test
     public void testCommandIsNotDeletedIfNotEmpty(){
-        setupMainContainer();
-        when(mainContainer.getCommand().isEmpty()).thenReturn(false);
+        setupKatibContainer();
+        when(katibContainer.getCommand().isEmpty()).thenReturn(false);
 
         katibPodModifier.removeCommandEmptyListIfPresent(pod);
         verify(mainContainer, times(0)).setCommand(null);
     }
+
 
     @Test
     void testThatNecessityOfModificationIsCorrectlyChecked() {
@@ -67,32 +68,8 @@ class KatibPodModifierTest {
         assertFalse(katibPodModifier.isModificationNecessary(pod), "pod should not be modified!");
     }
 
-    @Test
-    void testThatIstioLabelIsModified(){
-        setupKatibAndMainContainer();
-
-        katibPodModifier.mutatePod(pod);
-        verify(pod.getMetadata().getAnnotations(), times(1))
-                .put("sidecar.istio.io~1inject", "true");
-    }
-
-    private void setupMainContainer() {
-        when(pod.getMetadata()
-                .getLabels()
-                .get(KFEConstants.JOB_NAME_LABEL)).thenReturn("cool");
-        when(pod.getSpec().getContainers()).thenReturn(List.of(mainContainer));
-        when(mainContainer.getName()).thenReturn("cool");
-    }
-
-    private void setupKatibAndMainContainer() {
-        when(pod.getMetadata()
-                .getLabels()
-                .get(KFEConstants.JOB_NAME_LABEL)).thenReturn("cool");
-        when(mainContainer.getName()).thenReturn("cool");
-
-        when(pod.getSpec().getContainers())
-                .thenReturn(List.of(katibContainer))
-                .thenReturn(List.of(mainContainer));
+    private void setupKatibContainer(){
+        when(pod.getSpec().getContainers()).thenReturn(List.of(katibContainer));
         when(katibContainer.getName()).thenReturn(KFEConstants.KATIB_CONTAINER_NAME);
     }
 }
