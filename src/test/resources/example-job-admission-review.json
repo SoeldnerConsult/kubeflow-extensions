@@ -27,7 +27,8 @@
         "finalizers": [
         ],
         "labels": {
-          "access-ml-pipeline": "true"
+          "access-ml-pipeline": "true",
+          "kubeflow-extension": "true"
         },
         "managedFields": [
         ],
