@@ -27,14 +27,14 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 class JobAdmissionControllerTest {
 
-    @InjectMock
-    SharedLists sharedLists;
+//    @InjectMock
+//    SharedLists sharedLists;
 
     @Test
     void validateNoMutationWhenReadWriteOnce() throws IOException {
         HashSet<String> value = new HashSet<>();
-        value.add("dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj");
-        Mockito.when(sharedLists.getTrialList()).thenReturn(value);
+//        value.add("dog-breed-with-webhook-katib-v4-fbcuv-65jk8jqj");
+//        Mockito.when(sharedLists.getTrialList()).thenReturn(value);
 //        InputStream jsonFromFileAsInputStream = getClass().getClassLoader().getResourceAsStream("example-job-admission-review.json.json");
         ObjectMapper objectMapper = new ObjectMapper();
         InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("example-job-admission-review.json");

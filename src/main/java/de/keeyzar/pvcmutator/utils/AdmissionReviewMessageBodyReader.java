@@ -1,4 +1,4 @@
-package de.keeyzar.pvcmutator;
+package de.keeyzar.pvcmutator.utils;
 
 import io.fabric8.kubernetes.api.model.admission.AdmissionReview;
 import io.fabric8.kubernetes.client.utils.Serialization;

@@ -1,107 +1,66 @@
-package de.keeyzar.pvcmutator;
+package de.keeyzar.pvcmutator.pods;
 
+import de.keeyzar.pvcmutator.utils.KFEConstants;
 import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.KubernetesResource;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.admission.AdmissionRequest;
-import io.fabric8.kubernetes.api.model.admission.AdmissionResponseBuilder;
-import io.fabric8.kubernetes.api.model.admission.AdmissionReview;
-import io.fabric8.kubernetes.api.model.admission.AdmissionReviewBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
-import javax.json.bind.JsonbConfig;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import java.io.StringReader;
+import javax.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static javax.json.bind.JsonbConfig.FORMATTING;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static de.keeyzar.pvcmutator.utils.KFEConstants.KF_EXTENSION_LABEL;
 
-@Path("/pod/mutate")
-@Produces(APPLICATION_JSON)
-@Consumes(APPLICATION_JSON)
-public class PodAdmissionController {
-    private static final Logger log = LoggerFactory.getLogger(PodAdmissionController.class);
-
-    @POST
-    public AdmissionReview validate(AdmissionReview review) {
-        AdmissionRequest request = review.getRequest();
-        Jsonb jsonb = JsonbBuilder.create(new JsonbConfig().setProperty(FORMATTING, true));
-
-        log.debug("Received AdmissionReview: {}", jsonb.toJson(review));
-
-        AdmissionResponseBuilder responseBuilder = new AdmissionResponseBuilder()
-                .withAllowed(true)
-                .withUid(request.getUid());
-
-        KubernetesResource requestObject = request.getObject();
-
-        if (request.getOperation().equals("CREATE") && requestObject instanceof Pod) {
-            Pod pod = (Pod) requestObject;
-            if (doesJobNeedModification(pod)) {
-
-                //the pod is deserialized with an empty list;
-                //this results in a incorrect json patch, when a new command is added
-                //therefore, delete it when it's empty, because we later must append something
-                removeCommandEmptyListIfPresent(pod);
-
-                JsonObject original = toJsonObject(pod);
-                mutateJob(pod);
-                JsonObject mutated = toJsonObject(pod);
-
-                String patch = Json.createDiff(original, mutated).toString();
-                String encoded = Base64.getEncoder().encodeToString(patch.getBytes());
-
-                log.info("patching with patch as json{}", patch);
-                log.info("patch base64 encoded: ");
-
-                responseBuilder
-                        .withPatchType("JSONPatch")
-                        .withPatch(encoded);
-            }
-        }
-
-        //fix necessary, because we can't fix admissionReview of AdmissionReviewBuilder
-        //and we can't set v1beta1 in Kubernetes resource (it's quietly overridden)
-        AdmissionReview admissionReview = new AdmissionReviewBuilder().withResponse(responseBuilder.build()).build();
-        admissionReview.setApiVersion("admission.k8s.io/v1");
-        return admissionReview;
-    }
+@ApplicationScoped
+public class KatibPodModifier {
+    private static final Logger log = LoggerFactory.getLogger(KatibPodModifier.class);
 
     /**
      * this method is necessary, as the pod has an empty list already attached,
      * therefore the created json patch will have errors!
      */
-    private void removeCommandEmptyListIfPresent(Pod pod) {
-        Container katibContainer = findKatibContainer(pod);
+    void removeCommandEmptyListIfPresent(Pod pod) {
+        Container katibContainer = findMainContainer(pod);
         if(katibContainer.getCommand().isEmpty()) {
             katibContainer.setCommand(null);
         }
     }
 
-    boolean doesJobNeedModification(Pod pod) {
+    boolean isModificationNecessary(Pod pod) {
         log.debug("pod.meta.labels = {}", pod.getMetadata().getLabels());
-        log.debug("pod.label contains?? {}", pod.getMetadata().getLabels().containsKey("kubeflow-extension"));
+        log.debug("pod.label contains?? {}", pod.getMetadata().getLabels().containsKey(KF_EXTENSION_LABEL));
         pod.getMetadata().getLabels().forEach((k, v) -> log.trace("key: {} value{}", k, v));
-        return pod.getMetadata().getLabels().containsKey("kubeflow-extension");
+        return pod.getMetadata().getLabels().containsKey(KF_EXTENSION_LABEL);
     }
 
-    void mutateJob(Pod pod) {
+    void mutatePod(Pod pod) {
         log.info("starting to mutate pod");
-        Container container = findKatibContainer(pod);
-        fixKatibContainerArgsAndCommand(container);
+        Container katibContainer = findContainerByName(pod, KFEConstants.KATIB_CONTAINER_NAME);
+        Container mainContainer = findMainContainer(pod);
+
+        setIstioLabelToTrue(pod);
+        fixMainContainerArgsAndCommands(mainContainer);
+        fixKatibContainerArgsAndCommand(katibContainer);
+
         log.info("pod mutation finished");
+    }
+
+    private void setIstioLabelToTrue(Pod pod) {
+        //when patching this path we need to jsonPatch escape the slash in istio.io/inject with ~1
+        pod.getMetadata().getAnnotations().put("sidecar.istio.io~1inject", "true");
+    }
+
+    private void fixMainContainerArgsAndCommands(Container mainContainer) {
+        addSleepBeforeFirstArg(mainContainer);
+    }
+
+    private void addSleepBeforeFirstArg(Container mainContainer) {
+        List<String> args = mainContainer.getArgs();
+        args.add(0, "sleep 3 &&");
+        String newLongArg = String.join(" ", args);
+        mainContainer.setArgs(List.of(newLongArg));
     }
 
     /**
@@ -169,8 +128,13 @@ public class PodAdmissionController {
         return container.getArgs();
     }
 
-    private Container findKatibContainer(Pod pod) {
-        return findContainerByName(pod, "metrics-logger-and-collector");
+    private Container findMainContainer(Pod pod) {
+        String jobName = pod.getMetadata().getLabels().get(KFEConstants.JOB_NAME_LABEL);
+        if(jobName == null){
+            //TODO
+            throw new RuntimeException("better errorhandling necessary");
+        }
+        return findContainerByName(pod, jobName);
     }
 
 
@@ -198,10 +162,9 @@ public class PodAdmissionController {
             //todo better errorhandling
         }
 
+        //this call will fail, if no container is found, therefore find a good
+        //exception handling strategy
         return collect.get(0);
     }
-    
-    JsonObject toJsonObject(Pod pod) {
-        return Json.createReader(new StringReader(JsonbBuilder.create().toJson(pod))).readObject();
-    }
+
 }

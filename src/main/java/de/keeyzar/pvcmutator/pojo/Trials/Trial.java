@@ -8,13 +8,14 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Status;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 
 import java.util.HashMap;
 import java.util.Map;
 @Data
-@Builder(setterPrefix = "with", builderClassName = "TrialBuilder")
+@Builder(setterPrefix = "with", builderClassName = "TrialBuilder", access = AccessLevel.PUBLIC)
 @JsonDeserialize(builder = Trial.TrialBuilder.class)
 @JsonPropertyOrder({"apiVersion", "kind", "metadata", "spec"})
 @JsonIgnoreProperties("status")
