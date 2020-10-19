@@ -1,7 +1,6 @@
 package de.keeyzar.pvcmutator.jobs;
 
 import de.keeyzar.pvcmutator.utils.AdmissionReviewMutatorHelper;
-import de.keeyzar.pvcmutator.utils.KFEConstants;
 import io.fabric8.kubernetes.api.model.admission.AdmissionReview;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import org.slf4j.Logger;

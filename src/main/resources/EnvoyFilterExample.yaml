@@ -3,6 +3,8 @@ kind: EnvoyFilter
 metadata:
   name: add-header
   namespace: $namespace
+  labels:
+    kubeflow-extension: "true"
 spec:
   configPatches:
     - applyTo: VIRTUAL_HOST
@@ -23,5 +25,4 @@ spec:
                 value: $userId
   workloadSelector:
     labels:
-      kubeflow-extension: true
-  EOF
+      kubeflow-extension: "true"

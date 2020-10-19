@@ -11,7 +11,7 @@ import io.fabric8.kubernetes.api.model.KubernetesResource;
 )
 //sometimes its properly camelCased, sometimes not..
 //we actually don't care for it, so just ignore it
-@JsonIgnoreProperties({"resourceQuotaSpec", "resourcequotaspec"})
+@JsonIgnoreProperties({"resourceQuotaSpec", "resourcequotaspec", "plugins"})
 public class ProfileSpec implements KubernetesResource {
 
     @JsonProperty

@@ -25,7 +25,7 @@ public class PodAdmissionController {
     private static final Logger log = LoggerFactory.getLogger(PodAdmissionController.class);
     private final NotebookPodModifier notebookPodModifier;
     private final KatibPodModifier katibPodModifier;
-    private AdmissionReviewMutatorHelper admissionReviewMutatorHelper;
+    private final AdmissionReviewMutatorHelper admissionReviewMutatorHelper;
 
     @Inject
     public PodAdmissionController(NotebookPodModifier notebookPodModifier,

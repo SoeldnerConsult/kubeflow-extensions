@@ -1,6 +1,5 @@
 package de.keeyzar.pvcmutator.namespace;
 
-import de.keeyzar.pvcmutator.pods.KatibPodModifier;
 import de.keeyzar.pvcmutator.pojo.profile.Profile;
 import de.keeyzar.pvcmutator.pojo.profile.ProfileList;
 import io.fabric8.kubernetes.api.model.Doneable;

@@ -1,11 +1,10 @@
 package de.keeyzar.pvcmutator.namespace;
 
 import de.keeyzar.pvcmutator.pods.KatibPodModifier;
-import io.fabric8.kubernetes.api.model.HasMetadata;
+import de.keeyzar.pvcmutator.utils.KFEConstants;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.Applicable;
-import io.fabric8.kubernetes.client.dsl.Deletable;
-import io.fabric8.kubernetes.client.dsl.ParameterNamespaceListVisitFromServerGetDeleteRecreateWaitApplicable;
+import io.fabric8.kubernetes.client.KubernetesClientException;
+import io.fabric8.kubernetes.client.dsl.internal.RawCustomResourceOperationsImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +14,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.function.Consumer;
 
 /**
  * this class is more or less an istio controller
@@ -28,79 +26,105 @@ public class IstioController {
 
     private final KubernetesClient kubernetesClient;
     private final TemplateProvider templateProvider;
-
+    private final int KUBERNETES_RESOURCE_ALREADY_EXISTS = 409;
+    private final RawCustomResourceOperationsImpl istioOp;
+    private final RawCustomResourceOperationsImpl envoyOp;
 
     @Inject
-    public IstioController(KubernetesClient kubernetesClient, TemplateProvider templateProvider) {
+    public IstioController(KubernetesClient kubernetesClient, TemplateProvider templateProvider,
+                           IstioCRDProvider istioCRDProvider) {
         this.kubernetesClient = kubernetesClient;
         this.templateProvider = templateProvider;
+        istioOp = kubernetesClient.customResource(istioCRDProvider.getServiceRoleBindingCRDContext());
+        envoyOp = kubernetesClient.customResource(istioCRDProvider.getEnvoyFilterCRDContext());
     }
 
-    public void createIstioServiceRoleBinding(String namespaceName){
+    public void createIstioServiceRoleBinding(String namespaceName) {
         log.info("trying to create new istio ServiceRoleBinding with parameter {}", namespaceName);
-        loadAndApplyIstioTemplate(namespaceName, Applicable::createOrReplace);
+        loadAndApplyIstioTemplate(namespaceName);
     }
 
-    public void deleteIstioServiceRoleBinding(String namespaceName){
-        log.info("trying to delete new istio ServiceRoleBinding with parameter {}", namespaceName);
-        loadAndApplyIstioTemplate(namespaceName, Deletable::delete);
+    public void deleteIstioServiceRoleBinding(String namespaceName) {
+        String resourceName = createIstioResourceName(namespaceName);
+        log.info("trying to delete istio ServiceRoleBinding with name {}", resourceName);
+
+        try {
+            istioOp.delete("kubeflow", resourceName);
+        } catch (IOException e) {
+            log.error("While deleting the istio service role binding an IOException occurred", e);
+        }
     }
 
-    public void createEnvoyFilterExample(String namespaceName, String profileName){
-        String istioServiceRoleBindingTemplate = templateProvider.getEnvoyFilterTemplate();
-        String finalText = istioServiceRoleBindingTemplate
+    public void createEnvoyFilterExample(String namespaceName, String profileName) {
+        String envoyFilterTemplate = templateProvider.getEnvoyFilterTemplate();
+        String finalText = envoyFilterTemplate
                 .replaceAll("\\$namespace", namespaceName)
                 .replaceAll("\\$userId", profileName);
 
-        loadAndApplyRessource(finalText, Applicable::createOrReplace);
+        log.info("trying to apply template:\n{}", finalText);
+        try (InputStream stream = new ByteArrayInputStream(finalText.getBytes(StandardCharsets.UTF_8))) {
+            envoyOp.create(namespaceName, stream);
+            log.info("the template is applied!");
+        }catch(IOException e) {
+            log.error("an IO Error occurred, while reading the template string", e);
+        } catch (KubernetesClientException kce){
+            if (KUBERNETES_RESOURCE_ALREADY_EXISTS == kce.getCode()) {
+                log.info("the EnvoyFilter already exists - skipping!");
+            } else {
+                log.error("while applying the resource, a KubernetesException occured", kce);
+                throw kce;
+            }
+        }
     }
 
-    private void loadAndApplyIstioTemplate(String namespaceName, Consumer<ParameterNamespaceListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata, Boolean>> whatToDoWithKubernetesResource) {
+    private void loadAndApplyIstioTemplate(String namespaceName) {
         String istioServiceRoleBindingTemplate = templateProvider.getIstioServiceRoleBindingTemplate();
-        String finalText = istioServiceRoleBindingTemplate.replaceAll("\\$namespace", namespaceName);
+        String istioResourceName = createIstioResourceName(namespaceName);
+        String finalText = istioServiceRoleBindingTemplate
+                .replaceAll("\\$namespace", namespaceName)
+                .replaceAll("\\$name", istioResourceName);
 
-        loadAndApplyRessource(finalText, whatToDoWithKubernetesResource);
-    }
-
-    private void loadAndApplyRessource(String yamlAsString, Consumer<ParameterNamespaceListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata, Boolean>> whatToDoWithKubernetesResource) {
-        log.info("trying to load following yaml to kubernetesClient {}", yamlAsString);
-        InputStream stream = new ByteArrayInputStream(yamlAsString.getBytes(StandardCharsets.UTF_8));
-        ParameterNamespaceListVisitFromServerGetDeleteRecreateWaitApplicable<HasMetadata, Boolean> load;
-
-        try {
-            load = kubernetesClient.load(stream);
-            log.error("successfully loaded yaml string into kubernetes client");
-        } catch (Exception e){
-            log.error("could not load string {} into kubernetes client!", yamlAsString);
-            throw e;
-        }
-
-        try {
-            whatToDoWithKubernetesResource.accept(load);
-        } catch (Exception e){
-            log.error("we could not apply the resource to kubernetes api-server");
-            throw e;
+        log.info("trying to apply template:\n{}", finalText);
+        try (InputStream stream = new ByteArrayInputStream(finalText.getBytes(StandardCharsets.UTF_8))) {
+            istioOp.create("kubeflow", stream);
+            log.info("the template is applied!");
+        }catch(IOException e) {
+            log.error("an IO Error occurred, while reading the template string", e);
+        } catch (KubernetesClientException kce){
+            if (KUBERNETES_RESOURCE_ALREADY_EXISTS == kce.getCode()) {
+                log.info("the ServiceRoleBinding already exists - skipping!");
+            } else {
+                log.error("while applying the resource, a KubernetesException occured", kce);
+                throw kce;
+            }
         }
     }
 
+    /**
+     * obtain name template and replace the placeholder
+     */
+    private String createIstioResourceName(String namespaceName) {
+        return KFEConstants.ISTIO_SERVICE_BINDING_NAME_TEMPLATE.replaceAll("\\$namespace", namespaceName);
+    }
 
 }
+
 @ApplicationScoped
-class TemplateProvider{
+class TemplateProvider {
     private static final Logger log = LoggerFactory.getLogger(KatibPodModifier.class);
 
     private String istioServiceRoleBindingTemplate;
     private String envoyFilterTemplate;
 
     public String getEnvoyFilterTemplate() {
-        if(envoyFilterTemplate == null){
+        if (envoyFilterTemplate == null) {
             envoyFilterTemplate = getTemplateAsString("EnvoyFilterExample.yaml");
         }
         return envoyFilterTemplate;
     }
 
     public String getIstioServiceRoleBindingTemplate() {
-        if (istioServiceRoleBindingTemplate == null){
+        if (istioServiceRoleBindingTemplate == null) {
             istioServiceRoleBindingTemplate = getTemplateAsString("ServiceRoleBindingExample.yaml");
         }
         return istioServiceRoleBindingTemplate;
