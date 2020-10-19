@@ -43,8 +43,5 @@ public class ProfileController {
             e.printStackTrace();
             throw e;
         }
-
-//        LOGGER.info(() -> String.format("Did we find a profile? %b", profile != null));
-//        return profile != null;
     }
 }

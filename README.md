@@ -22,7 +22,7 @@ These Pods may access the ml-pipeline; which results in errors.
 
 ### 1 listen to new namespaces, why?
 When a new namespace is created, we need to create a new ServiceRoleBinding for the new namespace
-allowing partial access to kubeflow pipelines out of the new namespace from pods via ist.io-sidecars
+allowing partial access to kubeflow pipelines out of the new namespace from pods via istio-sidecars
 
 (this is only done, when a corresponding profile does exist)
 
@@ -37,7 +37,7 @@ Another user with granted access won't be enabled to run any ml-pipeline or kati
 
 ### 2) pod admission controller for python notebooks, why?
 when a new pod gets created, we inject a label "kubeflow-extension = true", therefore
-allowing this pod access via ist.io-sidecar to ml-pipelines (EnvoyFilter will
+allowing this pod access via istio-sidecar to ml-pipelines (EnvoyFilter will
 identify this sidecar, and therefore allow access to ml-pipelines api
 
 ### 3) trials admission controller, why
