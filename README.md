@@ -92,20 +92,23 @@ enough for us to explore the full capabilities of kubeflow to an extent not yet 
  
 
 #installation
-1. modify build
-2. mvn package
-3. ./installation.sh
-```shell script
-#setup namespace
-kubectl create ns kubeflow-extension
-kubectl config set-context $(kubectl config current-context) --namespace=kubeflow-extension
+1. apply k8s resources for NS, RBAC
+2. build & push docker image
+3. apply k8s resource for deployment
+4. create a certificate for admission review registration
+5. apply k8s resource for admission webhooks
 
-#push docker image
+```shell script
+#setup k8s resources
+#ns, role, role binding for psp and role binding for api-server access
+kubectl apply -f k8s-resources/resources.yaml
+
+#build package and push docker image
 mvn package -DskipTests
 docker build -f src/main/docker/Dockerfile.jvm -t keeyzar/tenancy-fixer-jvm .
 docker push keeyzar/tenancy-fixer-jvm
 
-#create certifcate request and sign..
+#create certificate request and sign..
 #make sure, go; cfssl cfssljson are installed
 chmod +x create-cert.sh
 ./create-cert.sh
@@ -115,22 +118,7 @@ kubectl apply -f tenancy-fixer.yaml
 mutator=$(kubectl get pods --selector=app=tenancy-fixer -ojsonpath='{.items[*].metadata.name}')
 kubectl wait --for=condition=Ready --timeout=300s pod/$mutator
 
-#create test namespace plus deployment, for testing access against own service via ssl
-kubectl create ns test-admission
-kubectl label ns test-admission admission=enabled
-kubectl apply -f httpbin.yaml
-
-sleep 5
-httpbin=$(kubectl get pods -n test-admission --selector=name=httpbin -o jsonpath='{.items[*].metadata.name}')
-kubectl -n test-admission wait --for=condition=Ready --timeout=300s pod/$httpbin
-kubectl exec $httpbin -n test-admission -- curl \
-    --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt  \
-    --request POST \
-    -H "Content-Type: application/json" \
-    --data '{"additionalProperties":{},"apiVersion":"admission.k8s.io/v1beta1","kind":"AdmissionReview","request":{"additionalProperties":{},"kind":{"additionalProperties":{},"group":"extensions","kind":"Deployment","version":"v1beta1"},"name":"httpbin","namespace":"test-admission","operation":"UPDATE","resource":{"additionalProperties":{},"group":"extensions","resource":"deployments","version":"v1beta1"},"uid":"75a55056-bc03-11e9-82d4-025000000001","userInfo":{"additionalProperties":{},"groups":["system:masters","system:authenticated"],"username":"docker-for-desktop"}}}' \
-    https://tenancy-fixer.kubeflow-extension.svc/pod/mutate
-
-#obtain certificate from pod: 
+#obtain certificate from pod, which the api-server should utilize as public-key 
 controller=$(kubectl get pods --selector=app=tenancy-fixer -o jsonpath='{.items[*].metadata.name}')
 cert=$(kubectl exec $controller -- cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt | base64 | tr -d '\n')
 sed -i.bak -E "s/caBundle:.*?/caBundle: $cert/" webhooks.yaml
@@ -140,33 +128,8 @@ kubectl apply -f webhooks.yaml
 #done :)
 ```
 
-# tenancy-fixer project
-
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
-
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
-
-## Running the application in dev mode
-
-You can run your application in dev mode that enables live coding using:
+## debugging
+for debugging purpose get logs of tenancy-fixer-* in kubeflow-extension namespace
 ```
-./mvnw quarkus:dev
+k logs -n kubeflow-extension --selector=app=tenancy-fixer --tail=-1
 ```
-
-## Packaging and running the application
-
-The application can be packaged using `./mvnw package`.
-It produces the `tenancy-fixer-1.0-runner.jar` file in the `/target` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/lib` directory.
-
-The application is now runnable using `java -jar target/tenancy-fixer-1.0-runner.jar`.
-
-## Creating a native executable
-
-You can create a native executable using: `./mvnw package -Pnative`.
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: `./mvnw package -Pnative -Dquarkus.native.container-build=true`.
-
-You can then execute your native executable with: `./target/tenancy-fixer-1.0-runner`
-
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/building-native-image.

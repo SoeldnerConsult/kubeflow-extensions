@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +18,17 @@ import static de.keeyzar.tenancyfixer.utils.KFEConstants.KF_EXTENSION_LABEL;
 @ApplicationScoped
 public class KatibPodModifier {
     private static final Logger log = LoggerFactory.getLogger(KatibPodModifier.class);
+    private String pythonDropInReplacement;
+
+    public KatibPodModifier() {
+        try(InputStream inputStream = getClass().getClassLoader().getResourceAsStream("kale-drop-in-replacement.py")){
+            pythonDropInReplacement = new String(inputStream.readAllBytes());
+            pythonDropInReplacement = pythonDropInReplacement.replaceAll("\\R", "\n");
+        } catch (IOException e){
+            log.error("could not read python drop in replacement code", e);
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * this method is necessary, as the pod has an empty list already attached,
@@ -64,9 +77,25 @@ public class KatibPodModifier {
         // ; 3 did not fail that often, but when we
         //to have a time dependency better be sure than sorry..
         //yeah.. there are better ways.. but at what cost?
+        //todo fix this sleep to 5 again for debugging purpose
         args.add(0, "sleep 5 &&");
         String newLongArg = String.join(" ", args);
+        newLongArg = replaceFailingFunction(newLongArg);
         mainContainer.setArgs(List.of(newLongArg));
+    }
+
+    /**
+     * kale extension has no errorhandling integrated
+     * an experiment running for an hour could fail without
+     * a reason, therefore replace the original functionality
+     * with a drop in replacement, where the failing call
+     * is wrapped in a retry mechanism
+     *
+     * the replacement is rather ugly
+     */
+    String replaceFailingFunction(String whereToReplace) {
+        String replaceHook = "from kale.common.kfputils                import create_and_wait_kfp_run;";
+        return whereToReplace.replaceAll(replaceHook, String.format("%s%s", pythonDropInReplacement, replaceHook));
     }
 
     /**

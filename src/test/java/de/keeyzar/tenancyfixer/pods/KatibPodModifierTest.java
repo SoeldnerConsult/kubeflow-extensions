@@ -3,12 +3,15 @@ package de.keeyzar.tenancyfixer.pods;
 import de.keeyzar.tenancyfixer.utils.KFEConstants;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.Pod;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,5 +74,27 @@ class KatibPodModifierTest {
     private void setupKatibContainer(){
         when(pod.getSpec().getContainers()).thenReturn(List.of(katibContainer));
         when(katibContainer.getName()).thenReturn(KFEConstants.KATIB_CONTAINER_NAME);
+    }
+
+    @Test
+    void expectNoSubstitution() {
+        String actual = new KatibPodModifier().replaceFailingFunction("teststring");
+        Assertions.assertEquals("teststring", actual);
+    }
+
+    @Test
+    void expectSubstitution() throws IOException {
+        String content;
+
+        try(InputStream stream = getClass().getClassLoader().getResourceAsStream("kale-drop-in-replacement.py")){
+            content = new String(stream.readAllBytes());
+            content = content.replaceAll("\\R", "\n");
+            //any random char sequence, making sure at least any python code is in there
+            assert ! content.isBlank();
+        }
+
+        KatibPodModifier katibPodModifier = new KatibPodModifier();
+        String actual = katibPodModifier.replaceFailingFunction("from kale.common.kfputils                import create_and_wait_kfp_run;");
+        Assertions.assertEquals(content + "from kale.common.kfputils                import create_and_wait_kfp_run;", actual);
     }
 }
