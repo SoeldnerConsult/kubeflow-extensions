@@ -101,7 +101,7 @@ enough for us to explore the full capabilities of kubeflow to an extent not yet 
 ```shell script
 #setup k8s resources
 #ns, role, role binding for psp and role binding for api-server access
-kubectl apply -f k8s-resources/resources.yaml
+kubectl apply -f resources.yaml
 
 #build package and push docker image
 mvn package -DskipTests

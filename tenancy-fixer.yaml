@@ -1,6 +1,7 @@
 kind: Service
 apiVersion: v1
 metadata:
+  namespace: kubeflow-extension
   name: tenancy-fixer
   labels:
     app: tenancy-fixer
