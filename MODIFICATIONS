@@ -1,0 +1,7 @@
+The work is loosely based on this project:
+https://github.com/vsevel/quarkus-admission-controller
+
+The remnants of the original code are found in the certificate creation
+- create-cert.sh
+- csr.json
+where only names were changed.
