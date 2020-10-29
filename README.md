@@ -8,7 +8,7 @@ It's more of a short-term fix. :)
 
 # use-case of kubeflow-extensions
 Kubeflow has partial multi tenancy support, we increase the support
-to katib and kubeflow pipelines (more or less ...)
+to katib and kubeflow pipelines, when utilized with e.g. **kale**
 
 Additionally, we fix some integration issues with jupyter notebooks.
 These Pods may access the ml-pipeline; which results in errors.
@@ -20,7 +20,7 @@ These Pods may access the ml-pipeline; which results in errors.
 4) job admission controller
 5) pod admission controller - for katib
 
-### 1 listen to new namespaces, why?
+### 1) listen to new namespaces, why?
 When a new namespace is created, we need to create a new ServiceRoleBinding for the new namespace
 allowing partial access to kubeflow pipelines out of the new namespace from pods via istio-sidecars
 
@@ -91,7 +91,7 @@ enough for us to explore the full capabilities of kubeflow to an extent not yet 
 > Sometimes they complete, sometimes not
  
 
-#installation
+# installation
 1. apply k8s resources for NS, RBAC
 2. build & push docker image
 3. apply k8s resource for deployment
