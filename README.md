@@ -6,7 +6,7 @@ missing substantial quality control measures;
 i.e. we wrote some tests, but only to speed up development.
 It's more of a short-term fix. :)
 
-#use-case of kubeflow-extensions
+# use-case of kubeflow-extensions
 Kubeflow has partial multi tenancy support, we increase the support
 to katib and kubeflow pipelines (more or less ...)
 
