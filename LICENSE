@@ -186,7 +186,9 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2020 https://github.com/vsevel/quarkus-admission-controller
+   Copyright (c) 2020 Vincent Sevel. 
+   (https://github.com/vsevel/quarkus-admission-controller)
+   All rights reserved.
 
    Modifications copyright (C) 2020 Söldner Consult GmbH
    Modifications are listed in the MODIFICATIONS file
